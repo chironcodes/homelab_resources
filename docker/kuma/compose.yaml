@@ -1,0 +1,19 @@
+# uptime-kuma
+# 
+
+version: '3.8'
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    volumes:
+      - /home/${USER}/resources/docker/kuma/appdata:/app/data
+
+    ports:
+      - 3001:3001 # Host Port:Container Port
+    restart: unless-stopped
+
+# networks:
+#   default:
+#     external: true
+#     name: nginx-default
