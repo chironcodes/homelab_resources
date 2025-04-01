@@ -1,0 +1,58 @@
+version: '3'
+services:
+  jenkins:
+    container_name: jenkins
+    image: jenkins-ansible
+    restart: unless-stopped
+    build:
+      context: jenkins-ansible     
+    ports:
+      - "8081:8080"
+    volumes:
+      - /home/${USER}/jenkins/jenkins_home:/var/jenkins_home
+
+  # remote_host:
+  #   container_name: remote-host
+  #   image: remote-host
+  #   build:
+  #     context: centos7
+  #   volumes:
+  #     - $PWD/aws-s3.sh:/tmp/script.sh
+  #   networks:
+  #     - net
+#   db_host:
+#     container_name: db
+#     image: mysql:5.7
+#     environment:
+#       - "MYSQL_ROOT_PASSWORD=1234"
+#     volumes:
+#       - /home/${USER}/resources/docker/jenkins/appdata/db_data:/var/lib/mysql
+#     networks:
+#       - net
+#   web:
+#     container_name: web
+#     image: ansible-web
+#     build:
+#       context: jenkins-ansible/web
+#     ports:
+#       - "80:80"
+#     networks:
+#       - net
+#   git:
+#     container_name: git-server
+#     image: 'gitlab/gitlab-ce:latest'
+#     hostname: 'gitlab.example.com'
+#     ports:
+#       - '8090:80'
+#     volumes:
+#       - /home/${USER}/gitlab/config:/etc/gitlab
+#       - /home/${USER}/gitlab/logs:/var/log/gitlab
+#       - /home/${USER}/gitlab/data:/var/opt/gitlab
+#     networks:
+#       - net
+
+
+networks:
+  default:
+    external: true
+    name: cloudfare-default

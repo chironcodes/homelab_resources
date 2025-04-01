@@ -1,0 +1,15 @@
+# cloudf-tunnel
+#
+
+version: '3.8'
+services:
+  cloudf-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudf-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDF_TUNNEL}
+  
+networks:
+  default:
+    external: true
+    name: cloudfare-default
