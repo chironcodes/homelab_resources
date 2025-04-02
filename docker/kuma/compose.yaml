@@ -13,6 +13,8 @@ services:
       - /home/${USER}/resources/docker/kuma/appdata:/app/data
     ports:
       - 3001:3001 # Host Port:Container Port
+    env_file:
+      -  stack.env
 
 networks:
   default:
