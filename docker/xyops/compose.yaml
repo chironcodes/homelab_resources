@@ -1,0 +1,40 @@
+# xyops — workflow automation and server monitoring
+# https://github.com/pixlcore/xyops
+
+services:
+  xyops:
+    image: ghcr.io/pixlcore/xyops:latest
+    container_name: xyops-conductor-01
+    # hostname must be resolvable by worker servers on your network (DNS, Tailscale, or /etc/hosts)
+    hostname: ${XYOPS_HOSTNAME}
+    restart: unless-stopped
+    init: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 5522:5522   # HTTP / WebSocket
+      - 5523:5523   # HTTPS / Secure WebSocket
+    volumes:
+      - /home/${USER}/resources/docker/xyops/appdata:/opt/xyops/data
+      - /home/${USER}/resources/docker/xyops/conf:/opt/xyops/conf
+      # Uncomment to enable Docker integration (plugin marketplace, Docker plugin)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TZ: ${TZ}
+      XYOPS_xysat_local: "true"
+      # Defines the conductor cluster — must match hostname above (comma-separated for multi-conductor)
+      # XYOPS_masters: ${XYOPS_HOSTNAME}
+      XYOPS_secret_key: ${XYOPS_SECRET_KEY}
+    env_file:
+      - .env
+
+# TODO: Review if external network is still needed before uncommenting
+# networks:
+#   default:
+#     external: true
+#     name: cloudfare-default

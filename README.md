@@ -81,3 +81,4 @@ Then uncomment the `networks:` blocks in the relevant compose files.
 | kuma          | 3001       | Uptime monitoring dashboard               |
 | neo4j         | 7474, 7687 | Includes APOC, n10s, graph-data-science   |
 | portainer     | 9443       | Mounts Docker socket (read-only)          |
+| xyops         | 5522, 5523 | Workflow automation and server monitoring |

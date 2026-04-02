@@ -290,6 +290,8 @@ $RECYCLE.BIN/
 
 appdata/
 **/appdata/
+conf/
+**/conf/
 
 CLAUDE.md
 CLAUDE-Archive.md
