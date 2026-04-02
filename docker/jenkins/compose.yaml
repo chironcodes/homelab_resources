@@ -4,12 +4,20 @@ services:
     container_name: jenkins
     image: jenkins-ansible
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     build:
       context: jenkins-ansible     
     ports:
       - "8081:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
     volumes:
-      - /home/${USER}/jenkins/jenkins_home:/var/jenkins_home
+      # NOTE: If Jenkins was previously running, migrate data from the old path before restarting.
+      - /home/${USER}/resources/docker/jenkins/appdata:/var/jenkins_home
 
   # remote_host:
   #   container_name: remote-host
@@ -52,7 +60,8 @@ services:
 #       - net
 
 
-networks:
-  default:
-    external: true
-    name: cloudfare-default
+# TODO: Review if external network is still needed before uncommenting
+# networks:
+#   default:
+#     external: true
+#     name: cloudfare-default

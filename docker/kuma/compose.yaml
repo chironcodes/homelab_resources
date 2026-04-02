@@ -7,6 +7,11 @@ services:
     image: louislam/uptime-kuma:1
     container_name: uptime-kuma
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
     security_opt:
       - no-new-privileges:true
     volumes:
@@ -16,7 +21,8 @@ services:
     env_file:
       -  stack.env
 
-networks:
-  default:
-    external: true
-    name: nginx-default
+# TODO: Review if external network is still needed before uncommenting
+# networks:
+#   default:
+#     external: true
+#     name: nginx-default

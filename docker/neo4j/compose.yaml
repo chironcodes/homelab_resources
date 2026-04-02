@@ -7,6 +7,13 @@ services:
     image: neo4j:latest
     container_name: neo4j
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
     volumes:
       - /home/${USER}/resources/docker/neo4j/appdata/data:/data
       - /home/${USER}/resources/docker/neo4j/appdata/logs:/logs

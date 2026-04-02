@@ -79,6 +79,13 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "100m"
+      max-file: "10"
+  security_opt:
+    - no-new-privileges:true
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -95,6 +102,11 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
@@ -106,6 +118,11 @@ services:
     image: redis:latest
     expose:
       - 6379
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -186,6 +203,8 @@ services:
 
   airflow-init:
     <<: *airflow-common
+    # airflow-init runs as root (user: "0:0") and uses gosu (setuid) — override security_opt
+    security_opt: []
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
     command:
