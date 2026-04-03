@@ -1,4 +1,4 @@
-.PHONY: help up down pull logs ps build
+.PHONY: help up down pull logs ps build lint
 
 SERVICE ?=
 
@@ -26,3 +26,15 @@ build: ## Build and start a custom app stack
 
 ps: ## Show all running containers
 	docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+lint: ## Validate all compose stack configs
+	@failed=0; \
+	for f in docker/*/compose.yaml; do \
+		printf "  %-45s" "$$f"; \
+		if docker compose -f $$f config > /dev/null 2>&1; then \
+			echo "OK"; \
+		else \
+			echo "FAIL"; failed=1; \
+		fi; \
+	done; \
+	exit $$failed

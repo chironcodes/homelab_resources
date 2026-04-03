@@ -297,3 +297,5 @@ conf/
 
 CLAUDE.md
 CLAUDE-Archive.md
+
+docker/homeassistant/ha-api.sh
