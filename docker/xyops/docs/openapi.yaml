@@ -1,0 +1,2956 @@
+openapi: 3.1.0
+info:
+  title: xyOps API
+  version: "1"
+  description: |
+    REST API for xyOps workflow automation and server monitoring.
+
+    **Base URL:** `http(s)://SERVER/api/app/NAME/v1`
+
+    **Authentication:** All requests require either:
+    - `X-API-Key` HTTP header
+    - `api_key` query parameter
+    - `api_key` property in the JSON body
+
+    API keys are 24-character alphanumeric strings (case-sensitive), generated in
+    the UI under **Admin → API Keys**.
+
+    **Standard response:** Every response includes `code: 0` on success. Errors
+    return a non-zero `code` and a `description` string.
+
+servers:
+  - url: http://localhost:5522
+    description: Local conductor (HTTP)
+  - url: https://localhost:5523
+    description: Local conductor (HTTPS)
+
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: api_key
+
+  schemas:
+    StandardSuccess:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1
+        description:
+          type: string
+          example: "Record not found"
+
+    ListMeta:
+      type: object
+      properties:
+        length:
+          type: integer
+
+    PaginationParams:
+      type: object
+      properties:
+        offset:
+          type: integer
+          default: 0
+        limit:
+          type: integer
+        sort_by:
+          type: string
+        sort_dir:
+          type: integer
+          enum: [-1, 1]
+
+    # ── Alerts ──────────────────────────────────────────────────────────────
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        expression:
+          type: string
+        message:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        email:
+          type: string
+        web_hook:
+          type: string
+        monitor_id:
+          type: string
+        enabled:
+          type: boolean
+        samples:
+          type: integer
+        notes:
+          type: string
+        modified:
+          type: integer
+        created:
+          type: integer
+
+    # ── Buckets ─────────────────────────────────────────────────────────────
+    Bucket:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        icon:
+          type: string
+        notes:
+          type: string
+        data:
+          type: object
+        modified:
+          type: integer
+        created:
+          type: integer
+
+    # ── Categories ──────────────────────────────────────────────────────────
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        color:
+          type: string
+        icon:
+          type: string
+        notes:
+          type: string
+        limits:
+          type: array
+          items:
+            type: object
+        actions:
+          type: array
+          items:
+            type: object
+
+    # ── Channels ────────────────────────────────────────────────────────────
+    Channel:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        notes:
+          type: string
+        users:
+          type: array
+          items:
+            type: string
+        email:
+          type: string
+        web_hook:
+          type: string
+        run_event:
+          type: string
+        sound:
+          type: string
+        icon:
+          type: string
+        max_per_day:
+          type: integer
+
+    # ── Events ──────────────────────────────────────────────────────────────
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        category:
+          type: string
+        targets:
+          type: array
+          items:
+            type: string
+        plugin:
+          type: string
+        params:
+          type: object
+        triggers:
+          type: array
+          items:
+            type: object
+        limits:
+          type: object
+        actions:
+          type: array
+          items:
+            type: object
+        notes:
+          type: string
+        icon:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        algo:
+          type: string
+
+    # ── Groups ──────────────────────────────────────────────────────────────
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        hostname_match:
+          type: string
+        notes:
+          type: string
+
+    # ── Jobs ────────────────────────────────────────────────────────────────
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        state:
+          type: string
+          enum: [queued, running, complete, failed, aborted]
+        code:
+          type: integer
+        data:
+          type: object
+        table:
+          type: object
+        params:
+          type: object
+        tags:
+          type: array
+          items:
+            type: string
+        created:
+          type: integer
+        modified:
+          type: integer
+
+    # ── Monitors ────────────────────────────────────────────────────────────
+    Monitor:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        source:
+          type: string
+        data_type:
+          type: string
+        suffix:
+          type: string
+        display:
+          type: boolean
+        min_vert_scale:
+          type: number
+        groups:
+          type: array
+          items:
+            type: string
+        icon:
+          type: string
+        notes:
+          type: string
+
+    # ── Plugins ─────────────────────────────────────────────────────────────
+    PluginParam:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [text, textarea, code, checkbox, select, hidden]
+        title:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: boolean
+            - type: number
+
+    Plugin:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+          enum: [event, monitor, action, scheduler]
+        command:
+          type: string
+        script:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: "#/components/schemas/PluginParam"
+        groups:
+          type: array
+          items:
+            type: string
+        format:
+          type: string
+        uid:
+          type: integer
+        gid:
+          type: integer
+        kill:
+          type: integer
+        icon:
+          type: string
+        notes:
+          type: string
+        username:
+          type: string
+        revision:
+          type: integer
+        modified:
+          type: integer
+        created:
+          type: integer
+
+    # ── Roles ───────────────────────────────────────────────────────────────
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+        icon:
+          type: string
+        notes:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        groups:
+          type: array
+          items:
+            type: string
+        privileges:
+          type: object
+
+    # ── Servers ─────────────────────────────────────────────────────────────
+    Server:
+      type: object
+      properties:
+        id:
+          type: string
+        hostname:
+          type: string
+        ip:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+        modified:
+          type: integer
+        created:
+          type: integer
+
+security:
+  - ApiKeyHeader: []
+  - ApiKeyQuery: []
+
+paths:
+  # ════════════════════════════════════════════════════════════════
+  # ALERTS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_alerts/v1:
+    get:
+      tags: [Alerts]
+      summary: List all alerts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Alert"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_alert/v1:
+    get:
+      tags: [Alerts]
+      summary: Get a single alert
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      alert:
+                        $ref: "#/components/schemas/Alert"
+
+  /api/app/create_alert/v1:
+    post:
+      tags: [Alerts]
+      summary: Create an alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                expression:
+                  type: string
+                message:
+                  type: string
+                groups:
+                  type: array
+                  items:
+                    type: string
+                email:
+                  type: string
+                web_hook:
+                  type: string
+                monitor_id:
+                  type: string
+                enabled:
+                  type: boolean
+                samples:
+                  type: integer
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      alert:
+                        $ref: "#/components/schemas/Alert"
+
+  /api/app/update_alert/v1:
+    post:
+      tags: [Alerts]
+      summary: Update an alert (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  required: [id]
+                  properties:
+                    id:
+                      type: string
+                - $ref: "#/components/schemas/Alert"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/test_alert/v1:
+    post:
+      tags: [Alerts]
+      summary: Test an alert expression against a server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [server, expression, message]
+              properties:
+                server:
+                  type: string
+                expression:
+                  type: string
+                message:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      result:
+                        type: boolean
+                      message:
+                        type: string
+
+  /api/app/delete_alert/v1:
+    post:
+      tags: [Alerts]
+      summary: Delete an alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # BUCKETS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_buckets/v1:
+    get:
+      tags: [Buckets]
+      summary: List all buckets
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Bucket"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_bucket/v1:
+    get:
+      tags: [Buckets]
+      summary: Get a single bucket with its data and files
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      bucket:
+                        $ref: "#/components/schemas/Bucket"
+                      data:
+                        type: object
+                      files:
+                        type: array
+                        items:
+                          type: object
+
+  /api/app/create_bucket/v1:
+    post:
+      tags: [Buckets]
+      summary: Create a bucket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                enabled:
+                  type: boolean
+                icon:
+                  type: string
+                notes:
+                  type: string
+                data:
+                  type: object
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      bucket:
+                        $ref: "#/components/schemas/Bucket"
+
+  /api/app/update_bucket/v1:
+    post:
+      tags: [Buckets]
+      summary: Update a bucket (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                title:
+                  type: string
+                data:
+                  type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/write_bucket_data/v1:
+    post:
+      tags: [Buckets]
+      summary: Write (merge) arbitrary data into a bucket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, data]
+              properties:
+                id:
+                  type: string
+                data:
+                  type: object
+                fetch:
+                  type: boolean
+                  description: If true, return the updated data object in the response
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+
+  /api/app/upload_bucket_files/v1:
+    post:
+      tags: [Buckets]
+      summary: Upload files to a bucket
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_bucket_file/v1:
+    post:
+      tags: [Buckets]
+      summary: Delete a file from a bucket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, filename]
+              properties:
+                id:
+                  type: string
+                filename:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_bucket/v1:
+    post:
+      tags: [Buckets]
+      summary: Delete a bucket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # CATEGORIES
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_categories/v1:
+    get:
+      tags: [Categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Category"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_category/v1:
+    get:
+      tags: [Categories]
+      summary: Get a single category
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      category:
+                        $ref: "#/components/schemas/Category"
+
+  /api/app/create_category/v1:
+    post:
+      tags: [Categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Category"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      category:
+                        $ref: "#/components/schemas/Category"
+
+  /api/app/update_category/v1:
+    post:
+      tags: [Categories]
+      summary: Update a category (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_category/v1:
+    post:
+      tags: [Categories]
+      summary: Delete a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/multi_update_category/v1:
+    post:
+      tags: [Categories]
+      summary: Bulk-update category sort order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sort_order]
+                    properties:
+                      id:
+                        type: string
+                      sort_order:
+                        type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # CHANNELS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_channels/v1:
+    get:
+      tags: [Channels]
+      summary: List all channels
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Channel"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_channel/v1:
+    get:
+      tags: [Channels]
+      summary: Get a single channel
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      channel:
+                        $ref: "#/components/schemas/Channel"
+
+  /api/app/create_channel/v1:
+    post:
+      tags: [Channels]
+      summary: Create a notification channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Channel"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      channel:
+                        $ref: "#/components/schemas/Channel"
+
+  /api/app/update_channel/v1:
+    post:
+      tags: [Channels]
+      summary: Update a channel (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_channel/v1:
+    post:
+      tags: [Channels]
+      summary: Delete a channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # EVENTS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_events/v1:
+    get:
+      tags: [Events]
+      summary: List all events
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Event"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_event/v1:
+    get:
+      tags: [Events]
+      summary: Get a single event with its active jobs and queue count
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/Event"
+                      jobs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Job"
+                      queued:
+                        type: integer
+
+  /api/app/get_event_history/v1:
+    get:
+      tags: [Events]
+      summary: Paginated job history for an event
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+        - in: query
+          name: sort_dir
+          schema:
+            type: integer
+            enum: [-1, 1]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Job"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/create_event/v1:
+    post:
+      tags: [Events]
+      summary: Create an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/Event"
+
+  /api/app/update_event/v1:
+    post:
+      tags: [Events]
+      summary: Update an event (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                update_state:
+                  type: object
+                  description: Optional state mutation alongside config changes
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      event:
+                        $ref: "#/components/schemas/Event"
+
+  /api/app/delete_event/v1:
+    post:
+      tags: [Events]
+      summary: Delete an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                delete_jobs:
+                  type: boolean
+                  description: Also delete all associated job history
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/run_event/v1:
+    post:
+      tags: [Events]
+      summary: Trigger an event manually and return the new job ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Event ID (id or title required)
+                title:
+                  type: string
+                  description: Event title (id or title required)
+                params:
+                  type: object
+                  description: Override event params for this run
+                input:
+                  type: object
+                  description: Structured input data passed to the plugin
+                test:
+                  type: boolean
+                  description: Run in test mode
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Job ID
+
+  /api/app/magic/v1/{token}:
+    get:
+      tags: [Events]
+      summary: Trigger an event via a magic link token (no API key required)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: "*"
+          description: Any query parameters are forwarded as job params
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                      stream:
+                        type: string
+
+  /api/app/form/v1/{token}:
+    get:
+      tags: [Events]
+      summary: Render an HTML form for triggering an event (browser-accessible)
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: HTML form
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # ════════════════════════════════════════════════════════════════
+  # FILES
+  # ════════════════════════════════════════════════════════════════
+  /api/app/upload_files/v1:
+    post:
+      tags: [Files]
+      summary: Upload generic files and receive public URLs
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      urls:
+                        type: array
+                        items:
+                          type: string
+
+  /api/app/upload_job_file/v1:
+    post:
+      tags: [Files]
+      summary: Upload a file to attach to a running job
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [id, auth, file1]
+              properties:
+                id:
+                  type: string
+                  description: Job ID
+                auth:
+                  type: string
+                  description: Job auth token
+                server:
+                  type: string
+                file1:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      key:
+                        type: string
+                      size:
+                        type: integer
+
+  /api/app/delete_job_file/v1:
+    post:
+      tags: [Files]
+      summary: Delete a file attached to a job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, path]
+              properties:
+                id:
+                  type: string
+                path:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/upload_job_input_files/v1:
+    post:
+      tags: [Files]
+      summary: Upload input files before a job run
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      files:
+                        type: array
+                        items:
+                          type: object
+
+  # ════════════════════════════════════════════════════════════════
+  # GROUPS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_groups/v1:
+    get:
+      tags: [Groups]
+      summary: List all server groups
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Group"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_group/v1:
+    get:
+      tags: [Groups]
+      summary: Get a single group
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      group:
+                        $ref: "#/components/schemas/Group"
+
+  /api/app/create_group/v1:
+    post:
+      tags: [Groups]
+      summary: Create a server group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, hostname_match]
+              properties:
+                title:
+                  type: string
+                hostname_match:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      group:
+                        $ref: "#/components/schemas/Group"
+
+  /api/app/update_group/v1:
+    post:
+      tags: [Groups]
+      summary: Update a group (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_group/v1:
+    post:
+      tags: [Groups]
+      summary: Delete a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/multi_update_group/v1:
+    post:
+      tags: [Groups]
+      summary: Bulk-update group sort order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sort_order]
+                    properties:
+                      id:
+                        type: string
+                      sort_order:
+                        type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/watch_group/v1:
+    post:
+      tags: [Groups]
+      summary: Enable maintenance watch mode on a group for a duration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, duration]
+              properties:
+                id:
+                  type: string
+                duration:
+                  type: number
+                  description: Watch duration in seconds
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/create_group_snapshot/v1:
+    post:
+      tags: [Groups]
+      summary: Create a monitoring snapshot for a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [group]
+              properties:
+                group:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Snapshot ID
+
+  # ════════════════════════════════════════════════════════════════
+  # JOBS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_active_jobs/v1:
+    get:
+      tags: [Jobs]
+      summary: List active (running/queued) jobs with filtering and pagination
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+        - in: query
+          name: sort_dir
+          schema:
+            type: integer
+            enum: [-1, 1]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Job"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_active_job_summary/v1:
+    get:
+      tags: [Jobs]
+      summary: Summary of active jobs grouped by event
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      events:
+                        type: object
+
+  /api/app/get_workflow_job_summary/v1:
+    get:
+      tags: [Jobs]
+      summary: Summary of active workflow jobs grouped by node
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      nodes:
+                        type: object
+
+  /api/app/get_job/v1:
+    get:
+      tags: [Jobs]
+      summary: Get a single job by ID
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: remove
+          schema:
+            type: array
+            items:
+              type: string
+          description: Fields to omit from the response
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      token:
+                        type: string
+                      job:
+                        $ref: "#/components/schemas/Job"
+
+  /api/app/get_jobs/v1:
+    post:
+      tags: [Jobs]
+      summary: Get multiple jobs by ID array
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                verbose:
+                  type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      jobs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Job"
+
+  /api/app/get_job_log/v1:
+    get:
+      tags: [Jobs]
+      summary: Get the raw log text for a completed job
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Plain text log
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/app/tail_live_job_log/v1:
+    get:
+      tags: [Jobs]
+      summary: Tail the live log of a running job
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: bytes
+          schema:
+            type: integer
+            description: Number of bytes from the end to return
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      text:
+                        type: string
+
+  /api/app/stream_job/v1:
+    get:
+      tags: [Jobs]
+      summary: Stream real-time job events via Server-Sent Events
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: token
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/app/update_job/v1:
+    post:
+      tags: [Jobs]
+      summary: Update writable fields on an active job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/resume_job/v1:
+    post:
+      tags: [Jobs]
+      summary: Resume a suspended job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                params:
+                  type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/abort_job/v1:
+    post:
+      tags: [Jobs]
+      summary: Abort a running or queued job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_job/v1:
+    post:
+      tags: [Jobs]
+      summary: Delete a completed job record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/flush_event_queue/v1:
+    post:
+      tags: [Jobs]
+      summary: Clear all queued (not yet running) jobs for an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                  description: Event ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      count:
+                        type: integer
+                        description: Number of queued jobs removed
+
+  /api/app/manage_job_tags/v1:
+    post:
+      tags: [Jobs]
+      summary: Replace the tags on a job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, tags]
+              properties:
+                id:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # MONITORS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_monitors/v1:
+    get:
+      tags: [Monitors]
+      summary: List all monitors
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Monitor"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_monitor/v1:
+    get:
+      tags: [Monitors]
+      summary: Get a single monitor
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      monitor:
+                        $ref: "#/components/schemas/Monitor"
+
+  /api/app/create_monitor/v1:
+    post:
+      tags: [Monitors]
+      summary: Create a monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Monitor"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      monitor:
+                        $ref: "#/components/schemas/Monitor"
+
+  /api/app/update_monitor/v1:
+    post:
+      tags: [Monitors]
+      summary: Update a monitor (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/test_monitor/v1:
+    post:
+      tags: [Monitors]
+      summary: Test a monitor expression against a live server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [server, source, data_type]
+              properties:
+                server:
+                  type: string
+                source:
+                  type: string
+                data_type:
+                  type: string
+                data_match:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      value:
+                        type: number
+                      fail:
+                        type: boolean
+
+  /api/app/delete_monitor/v1:
+    post:
+      tags: [Monitors]
+      summary: Delete a monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/multi_update_monitor/v1:
+    post:
+      tags: [Monitors]
+      summary: Bulk-update monitor sort order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sort_order]
+                    properties:
+                      id:
+                        type: string
+                      sort_order:
+                        type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/get_quickmon_data/v1:
+    get:
+      tags: [Monitors]
+      summary: Get the latest monitor readings for a server or group
+      parameters:
+        - in: query
+          name: server
+          schema:
+            type: string
+        - in: query
+          name: group
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      servers:
+                        type: object
+
+  /api/app/get_latest_monitor_data/v1:
+    get:
+      tags: [Monitors]
+      summary: Get recent time-series data for a specific monitor on a server
+      parameters:
+        - in: query
+          name: server
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: sys
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                      data:
+                        type: object
+
+  /api/app/get_historical_monitor_data/v1:
+    get:
+      tags: [Monitors]
+      summary: Get historical time-series data for a monitor on a given date
+      parameters:
+        - in: query
+          name: server
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: sys
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: integer
+            description: Unix timestamp for the date to query
+        - in: query
+          name: limit
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          type: object
+
+  # ════════════════════════════════════════════════════════════════
+  # PLUGINS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_plugins/v1:
+    get:
+      tags: [Plugins]
+      summary: List all plugins
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Plugin"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_plugin/v1:
+    get:
+      tags: [Plugins]
+      summary: Get a single plugin
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      plugin:
+                        $ref: "#/components/schemas/Plugin"
+
+  /api/app/create_plugin/v1:
+    post:
+      tags: [Plugins]
+      summary: Create a plugin definition
+      description: |
+        Requires `create_plugins` privilege. `id` is auto-generated if omitted.
+        `type` must be one of: `event`, `monitor`, `action`, `scheduler`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, type]
+              properties:
+                title:
+                  type: string
+                enabled:
+                  type: boolean
+                  default: true
+                type:
+                  type: string
+                  enum: [event, monitor, action, scheduler]
+                command:
+                  type: string
+                  description: Shell command to execute (use `[shell-plugin]` for inline scripts)
+                script:
+                  type: string
+                  description: Inline shell script (used when command is `[shell-plugin]`)
+                params:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PluginParam"
+                groups:
+                  type: array
+                  items:
+                    type: string
+                format:
+                  type: string
+                uid:
+                  type: integer
+                gid:
+                  type: integer
+                kill:
+                  type: integer
+                  description: Seconds before SIGKILL after SIGTERM
+                icon:
+                  type: string
+                notes:
+                  type: string
+            examples:
+              node_plugin:
+                summary: Node.js plugin (external command)
+                value:
+                  title: "API Ingest"
+                  enabled: true
+                  type: event
+                  command: "/usr/local/bin/node /opt/xyops/plugins/api-ingest/plugin.js"
+                  params:
+                    - id: url
+                      type: text
+                      title: URL
+                      value: ""
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      plugin:
+                        $ref: "#/components/schemas/Plugin"
+
+  /api/app/update_plugin/v1:
+    post:
+      tags: [Plugins]
+      summary: Update a plugin definition (shallow merge — send only changed fields)
+      description: |
+        Requires `edit_plugins` privilege. `modified` and `revision` are updated automatically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                title:
+                  type: string
+                enabled:
+                  type: boolean
+                type:
+                  type: string
+                  enum: [event, monitor, action, scheduler]
+                command:
+                  type: string
+                script:
+                  type: string
+                params:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/PluginParam"
+                groups:
+                  type: array
+                  items:
+                    type: string
+                format:
+                  type: string
+                uid:
+                  type: integer
+                gid:
+                  type: integer
+                kill:
+                  type: integer
+                icon:
+                  type: string
+                notes:
+                  type: string
+            example:
+              id: "api-ingest"
+              enabled: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_plugin/v1:
+    post:
+      tags: [Plugins]
+      summary: Delete a plugin definition (permanent)
+      description: Requires `delete_plugins` privilege.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+            example:
+              id: "api-ingest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # ROLES
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_roles/v1:
+    get:
+      tags: [Roles]
+      summary: List all roles
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Role"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_role/v1:
+    get:
+      tags: [Roles]
+      summary: Get a single role
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      role:
+                        $ref: "#/components/schemas/Role"
+
+  /api/app/create_role/v1:
+    post:
+      tags: [Roles]
+      summary: Create a role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Role"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      role:
+                        $ref: "#/components/schemas/Role"
+
+  /api/app/update_role/v1:
+    post:
+      tags: [Roles]
+      summary: Update a role (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_role/v1:
+    post:
+      tags: [Roles]
+      summary: Delete a role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  # ════════════════════════════════════════════════════════════════
+  # SEARCH
+  # ════════════════════════════════════════════════════════════════
+  /api/app/search_jobs/v1:
+    get:
+      tags: [Search]
+      summary: Search job history
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+        - in: query
+          name: sort_dir
+          schema:
+            type: integer
+            enum: [-1, 1]
+        - in: query
+          name: verbose
+          schema:
+            type: boolean
+        - in: query
+          name: select
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Job"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/search_servers/v1:
+    get:
+      tags: [Search]
+      summary: Search registered servers
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+        - in: query
+          name: sort_dir
+          schema:
+            type: integer
+            enum: [-1, 1]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Server"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/search_alerts/v1:
+    get:
+      tags: [Search]
+      summary: Search alert activity and history
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/search_snapshots/v1:
+    get:
+      tags: [Search]
+      summary: Search monitoring snapshots
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/search_activity/v1:
+    get:
+      tags: [Search]
+      summary: Search system activity log (admin only)
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  # ════════════════════════════════════════════════════════════════
+  # SERVERS
+  # ════════════════════════════════════════════════════════════════
+  /api/app/get_servers/v1:
+    get:
+      tags: [Servers]
+      summary: List registered servers with filtering and pagination
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+        - in: query
+          name: sort_dir
+          schema:
+            type: integer
+            enum: [-1, 1]
+        - in: query
+          name: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Server"
+                      list:
+                        $ref: "#/components/schemas/ListMeta"
+
+  /api/app/get_server/v1:
+    get:
+      tags: [Servers]
+      summary: Get a single server
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      server:
+                        $ref: "#/components/schemas/Server"
+
+  /api/app/create_server/v1:
+    post:
+      tags: [Servers]
+      summary: Register a server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Server"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StandardSuccess"
+                  - type: object
+                    properties:
+                      server:
+                        $ref: "#/components/schemas/Server"
+
+  /api/app/update_server/v1:
+    post:
+      tags: [Servers]
+      summary: Update a server record (partial)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+  /api/app/delete_server/v1:
+    post:
+      tags: [Servers]
+      summary: Delete a server record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandardSuccess"
+
+tags:
+  - name: Alerts
+    description: Alert rules based on monitor expressions
+  - name: Buckets
+    description: Key-value data stores with optional file attachments
+  - name: Categories
+    description: Event categories with limits and action hooks
+  - name: Channels
+    description: Notification channels (email, webhook, follow-up job)
+  - name: Events
+    description: Scheduled or on-demand jobs — the core workflow primitive
+  - name: Files
+    description: File upload and management for jobs and buckets
+  - name: Groups
+    description: Server groups matched by hostname pattern
+  - name: Jobs
+    description: Job instances created when events run
+  - name: Monitors
+    description: Time-series metric collectors running on worker nodes
+  - name: Plugins
+    description: Custom event runners, monitors, and action handlers
+  - name: Roles
+    description: Permission sets assigned to users
+  - name: Search
+    description: Cross-resource search endpoints
+  - name: Servers
+    description: Registered worker nodes

@@ -1,4 +1,4 @@
-.PHONY: help up down pull logs ps build lint
+.PHONY: help up down pull logs ps build lint xyops-sync
 
 SERVICE ?=
 
@@ -26,6 +26,10 @@ build: ## Build and start a custom app stack
 
 ps: ## Show all running containers
 	docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+xyops-sync: ## Upsert all xyOps plugins via API (reads docker/xyops/.secrets)
+	@echo "Syncing xyOps plugins..."
+	@bash docker/xyops/scripts/sync-plugins.sh
 
 lint: ## Validate all compose stack configs
 	@failed=0; \
