@@ -1,0 +1,30 @@
+# homeassistant
+#
+
+version: '3.8'
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    privileged: true
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /home/${USER}/resources/docker/homeassistant/appdata:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    environment:
+      - TZ=${TZ}
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8123/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"

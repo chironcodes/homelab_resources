@@ -1,0 +1,42 @@
+# minio — S3-compatible object storage
+# Using Chainguard image — the upstream community image (minio/minio) was archived Feb 2026
+# https://images.chainguard.dev/directory/image/minio/overview
+# Console: http://<host>:9001  |  API: http://<host>:9000
+
+services:
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    init: true
+    command: server /data --console-address ":9001"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 9000:9000   # S3 API
+      - 9001:9001   # Web console
+    volumes:
+      - /home/${USER}/resources/docker/minio/appdata/data:/data
+    environment:
+      TZ: ${TZ}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# TODO: Review if external network is still needed before uncommenting
+# networks:
+#   default:
+#     external: true
+#     name: cloudfare-default
