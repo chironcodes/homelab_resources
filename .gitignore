@@ -292,6 +292,8 @@ appdata/
 **/appdata/
 conf/
 **/conf/
+.secrets
+**/.secrets
 
 CLAUDE.md
 CLAUDE-Archive.md

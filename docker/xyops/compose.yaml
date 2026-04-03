@@ -22,6 +22,7 @@ services:
     volumes:
       - /home/${USER}/resources/docker/xyops/appdata:/opt/xyops/data
       - /home/${USER}/resources/docker/xyops/conf:/opt/xyops/conf
+      - /home/${USER}/resources/docker/xyops/plugins:/opt/xyops/plugins
       # Uncomment to enable Docker integration (plugin marketplace, Docker plugin)
       - /var/run/docker.sock:/var/run/docker.sock
     environment:

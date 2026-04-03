@@ -1,0 +1,38 @@
+{
+	"type": "xypdf",
+	"description": "xyOps Portable Data Object",
+	"version": "1.0",
+	"xyops": "1.0.43",
+	"items": [
+		{
+			"type": "plugin",
+			"data": {
+				"id": "api_ingest",
+				"title": "API Ingestion",
+				"enabled": true,
+				"type": "event",
+				"command": "/usr/local/bin/node /opt/xyops/plugins/api-ingest/plugin.js",
+				"kill": "parent",
+				"runner": false,
+				"notes": "Fetches JSON from any HTTP/HTTPS endpoint and passes the response as output data for downstream chaining.",
+				"params": [
+					{
+						"id": "url",
+						"title": "API URL",
+						"type": "text",
+						"variant": "url",
+						"value": "https://api.agify.io/?name={name}",
+						"caption": "Full URL to fetch. Use {{ param_id }} to interpolate other parameters or upstream job output."
+					},
+					{
+						"id": "name",
+						"title": "Name",
+						"type": "text",
+						"value": "",
+						"caption": "Interpolated into the URL via {{ name }}. Can also be fed from upstream job output."
+					}
+				]
+			}
+		}
+	]
+}
